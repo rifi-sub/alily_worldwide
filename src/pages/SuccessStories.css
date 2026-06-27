@@ -1,0 +1,105 @@
+.stories-page {
+  padding: 5rem 0;
+  background-color: var(--bg-color);
+}
+
+.stories-title {
+  text-align: center;
+  font-size: 3.5rem;
+  margin-bottom: 4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stories-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  max-width: 900px;
+  margin: 0 auto 5rem;
+}
+
+.story-item {
+  background-color: var(--primary-light);
+  border: 1px solid var(--border-color);
+  padding: 3.5rem 3rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  position: relative;
+}
+
+.story-quote {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1.6;
+  font-style: italic;
+  color: var(--text-color);
+  margin-bottom: 1.5rem;
+}
+
+.story-author {
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary-accent);
+}
+
+/* Gallery Section */
+.gallery-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 5rem;
+}
+
+.gallery-title {
+  text-align: center;
+  font-size: 3rem;
+  margin-bottom: 3rem;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.gallery-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  padding: 0.8rem;
+  background-color: var(--primary-light);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  transition: var(--transition);
+  aspect-ratio: 1 / 1;
+}
+
+.gallery-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+}
+
+.gallery-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .stories-title {
+    font-size: 2.5rem;
+  }
+  
+  .gallery-title {
+    font-size: 2.2rem;
+  }
+  
+  .story-item {
+    padding: 2rem 1.5rem;
+  }
+  
+  .story-quote {
+    font-size: 1.25rem;
+  }
+}

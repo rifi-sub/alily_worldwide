@@ -1,0 +1,103 @@
+.book-page {
+  padding: 5rem 0;
+  background-color: var(--bg-color);
+}
+
+.book-title {
+  text-align: center;
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+}
+
+.book-subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 300;
+  max-width: 650px;
+  margin: 0 auto 4rem;
+  line-height: 1.6;
+}
+
+.services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.service-card {
+  background-color: var(--primary-light);
+  border: 1px solid var(--border-color);
+  padding: 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.01);
+  transition: var(--transition);
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
+  border-color: var(--primary-accent);
+}
+
+.service-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.service-name {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.service-meta {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.service-price {
+  color: var(--primary-accent);
+}
+
+.service-desc {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.book-btn {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .book-title {
+    font-size: 2.5rem;
+  }
+  
+  .service-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    gap: 1.5rem;
+  }
+  
+  .service-meta {
+    justify-content: center;
+  }
+  
+  .book-btn {
+    width: 100%;
+  }
+}
