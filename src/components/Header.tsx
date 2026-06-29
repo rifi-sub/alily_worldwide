@@ -7,11 +7,11 @@ import logo from '../assets/logo.png';
 
 interface HeaderProps {
   onLoginClick: () => void;
-  currentUser: string | null;
+  isAuthenticated: boolean;
   onLogout: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onLoginClick, currentUser, onLogout }) => {
+export const Header: React.FC<HeaderProps> = ({ onLoginClick, isAuthenticated, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { cartCount } = useCart();
 
@@ -98,11 +98,20 @@ export const Header: React.FC<HeaderProps> = ({ onLoginClick, currentUser, onLog
             </li>
             {isMobileMenuOpen && (
               <li style={{ marginTop: '1rem' }}>
-                {currentUser ? (
-                  <button className="login-btn" onClick={() => { onLogout(); closeMobileMenu(); }}>
-                    <User size={18} />
-                    Logout ({currentUser})
-                  </button>
+                {isAuthenticated ? (
+                  <>
+                    <NavLink
+                      to="/members"
+                      className={({ isActive }) => isActive ? 'nav-link active' : 'nav-link'}
+                      onClick={closeMobileMenu}
+                    >
+                      My Account
+                    </NavLink>
+                    <button className="login-btn" onClick={() => { onLogout(); closeMobileMenu(); }} style={{ marginTop: '0.5rem' }}>
+                      <User size={18} />
+                      Logout
+                    </button>
+                  </>
                 ) : (
                   <button className="login-btn" onClick={() => { onLoginClick(); closeMobileMenu(); }}>
                     <User size={18} />
@@ -115,11 +124,16 @@ export const Header: React.FC<HeaderProps> = ({ onLoginClick, currentUser, onLog
         </nav>
 
         <div className="header-actions">
-          {currentUser ? (
-            <button className="login-btn" onClick={onLogout}>
-              <User size={18} />
-              Logout
-            </button>
+          {isAuthenticated ? (
+            <>
+              <Link to="/members" className="login-btn" aria-label="My Account">
+                <User size={18} />
+                My Account
+              </Link>
+              <button className="login-btn" onClick={onLogout} style={{ marginLeft: '0.25rem', fontSize: '0.8rem', opacity: 0.7 }}>
+                Logout
+              </button>
+            </>
           ) : (
             <button className="login-btn" onClick={onLoginClick}>
               <User size={18} />

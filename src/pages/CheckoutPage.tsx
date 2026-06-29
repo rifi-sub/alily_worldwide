@@ -1,65 +1,134 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ShieldCheck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import api from '../lib/api';
 import './CheckoutPage.css';
 
 export const CheckoutPage: React.FC = () => {
   const { cart, cartTotal, clearCart } = useCart();
+  const { user } = useAuth();
   
   // Checkout Form Details
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
-    address: '',
-    city: '',
-    postCode: '',
-    country: 'United Kingdom'
+    email: ''
   });
 
-  // Simulated PayPal Flow States
-  const [showPortal, setShowPortal] = useState(false);
-  const [portalStep, setPortalStep] = useState<'login' | 'confirm' | 'processing'>('login');
-  const [paypalEmail, setPaypalEmail] = useState('');
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        fullName: user.name || '',
+        email: user.email
+      });
+    }
+  }, [user]);
+
+  const [paypalConfig, setPaypalConfig] = useState<{ clientId: string; mode: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [orderCode, setOrderCode] = useState('');
+
+  useEffect(() => {
+    api.get('/worldwide/payments/config')
+      .then((res) => {
+        setPaypalConfig(res.data);
+      })
+      .catch((err) => {
+        console.error('Failed to load PayPal config', err);
+        setErrorMsg('Failed to load payment configuration.');
+      });
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const triggerMockPayPal = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.fullName || !formData.email || !formData.address) {
-      alert('Please fill out all required shipping fields.');
-      return;
+  const validateForm = () => {
+    if (!formData.fullName.trim() || !formData.email.trim()) {
+      alert('Please fill out all contact fields.');
+      return false;
     }
-    
-    // Set up portal initial state
-    setPaypalEmail(formData.email);
-    setPortalStep('login');
-    setShowPortal(true);
+    return true;
   };
 
-  const handlePaypalLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPortalStep('confirm');
+  const createPayPalOrder = async () => {
+    setErrorMsg(null);
+    const resolvedOrderCode = `ALW-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+    try {
+      const response = await api.post('/worldwide/payments/create-order', {
+        amount: cartTotal.toFixed(2),
+        orderCode: resolvedOrderCode,
+        items: cart.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          bindingStyle: item.bindingStyle
+        }))
+      });
+
+      const pendingOrder = {
+        orderId: response.data.orderId,
+        orderCode: resolvedOrderCode,
+        customerEmail: formData.email.trim(),
+        customerName: formData.fullName.trim(),
+        items: cart.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price,
+          bindingStyle: item.bindingStyle
+        })),
+        shippingAddress: null
+      };
+      sessionStorage.setItem('alw_pending_order', JSON.stringify(pendingOrder));
+
+      return response.data.orderId;
+    } catch (err: any) {
+      console.error('Create PayPal order failed:', err);
+      const msg = err.response?.data?.error || 'Failed to create PayPal transaction.';
+      setErrorMsg(msg);
+      throw err;
+    }
   };
 
-  const handlePaypalPay = () => {
-    setPortalStep('processing');
-    
-    // Generate simulated order code
-    const uniqueNum = Math.floor(100000 + Math.random() * 900000);
-    const code = `ALW-${uniqueNum}`;
-    
-    setTimeout(() => {
-      setOrderCode(code);
-      setShowPortal(false);
-      setIsSuccess(true);
-      clearCart(); // Clear cart state
-    }, 2500);
+  const onApprovePayPal = async (data: any) => {
+    setLoading(true);
+    try {
+      const pendingOrderStr = sessionStorage.getItem('alw_pending_order');
+      if (!pendingOrderStr) {
+        alert('Order session expired. Please refresh the page and try again.');
+        setLoading(false);
+        return;
+      }
+
+      const pendingOrder = JSON.parse(pendingOrderStr);
+
+      const captureResponse = await api.post('/worldwide/payments/capture-order', {
+        orderId: data.orderID,
+        customerEmail: pendingOrder.customerEmail,
+        customerName: pendingOrder.customerName,
+        items: pendingOrder.items,
+        orderCode: pendingOrder.orderCode,
+        shippingAddress: null
+      });
+
+      if (captureResponse.data.success) {
+        setOrderCode(captureResponse.data.orderCode);
+        clearCart();
+        sessionStorage.removeItem('alw_pending_order');
+        setIsSuccess(true);
+      }
+    } catch (err: any) {
+      console.error('Payment capture error:', err);
+      setErrorMsg(err.response?.data?.error || 'Payment capture failed. Please contact support.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Render Success screen
@@ -114,8 +183,8 @@ export const CheckoutPage: React.FC = () => {
       <div className="container checkout-grid">
         {/* Left Side: Shipping form */}
         <div>
-          <h2 className="checkout-section-title">Shipping Information</h2>
-          <form className="billing-form" onSubmit={triggerMockPayPal}>
+          <h2 className="checkout-section-title">Contact Information</h2>
+          <div className="billing-form">
             <div className="form-group">
               <label htmlFor="fullName">Full Name *</label>
               <input
@@ -142,73 +211,50 @@ export const CheckoutPage: React.FC = () => {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="address">Address *</label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                className="form-control"
-                required
-              />
+            <div className="paypal-trigger-container" style={{ marginTop: '2rem' }}>
+              {errorMsg && (
+                <div style={{ color: '#D9383A', marginBottom: '1rem', fontSize: '0.85rem' }}>
+                  {errorMsg}
+                </div>
+              )}
+              {loading || !paypalConfig ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '1rem 0' }}>
+                  <div style={{ width: '30px', height: '30px', border: '3px solid rgba(255,255,255,0.1)', borderTop: '3px solid var(--primary-accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                  <style>{`
+                    @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                    }
+                  `}</style>
+                </div>
+              ) : (
+                <PayPalScriptProvider
+                  options={{
+                    clientId: paypalConfig.clientId,
+                    currency: 'GBP',
+                    intent: 'capture',
+                    environment: paypalConfig.mode === 'live' ? 'production' : 'sandbox',
+                  }}
+                >
+                  <PayPalButtons
+                    style={{ layout: 'vertical', shape: 'rect', color: 'gold' }}
+                    onClick={(_, actions) => {
+                      if (!validateForm()) {
+                        return actions.reject();
+                      }
+                      return actions.resolve();
+                    }}
+                    createOrder={createPayPalOrder}
+                    onApprove={onApprovePayPal}
+                    onError={(err) => {
+                      console.error('PayPal button error:', err);
+                      setErrorMsg('There was an issue processing the payment with PayPal.');
+                    }}
+                  />
+                </PayPalScriptProvider>
+              )}
             </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="city">City *</label>
-                <input
-                  type="text"
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="postCode">Post Code *</label>
-                <input
-                  type="text"
-                  id="postCode"
-                  name="postCode"
-                  value={formData.postCode}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="country">Country</label>
-              <select
-                id="country"
-                name="country"
-                value={formData.country}
-                onChange={handleInputChange}
-                className="form-control"
-              >
-                <option value="United Kingdom">United Kingdom</option>
-                <option value="United States">United States</option>
-                <option value="Spain">Spain</option>
-                <option value="Germany">Germany</option>
-                <option value="Canada">Canada</option>
-              </select>
-            </div>
-
-            <div className="paypal-trigger-container">
-              <button type="submit" className="paypal-btn-mock">
-                <span>Pay with </span>
-                <span className="paypal-logo-text">
-                  <span className="paypal-blue">Pay</span>
-                  <span className="paypal-light-blue">Pal</span>
-                </span>
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
 
         {/* Right Side: Order summary */}
@@ -254,102 +300,6 @@ export const CheckoutPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Simulated PayPal Portal Overlay */}
-      {showPortal && (
-        <div className="paypal-portal-overlay">
-          <div className="paypal-portal-window">
-            <div className="paypal-portal-header">
-              <span style={{ fontWeight: 800, fontSize: '1.2rem', fontStyle: 'italic' }}>PayPal Secure Sandbox</span>
-              <button onClick={() => setShowPortal(false)} style={{ color: '#FFFFFF', fontSize: '1.1rem' }}>✕</button>
-            </div>
-
-            {portalStep === 'login' && (
-              <form className="paypal-portal-body" onSubmit={handlePaypalLogin}>
-                <h3 style={{ fontSize: '1.25rem', color: '#333333', textAlign: 'center', fontWeight: 600 }}>
-                  Pay with PayPal
-                </h3>
-                <div className="paypal-input-group">
-                  <label htmlFor="paypalEmail">Email address</label>
-                  <input
-                    type="email"
-                    id="paypalEmail"
-                    value={paypalEmail}
-                    onChange={(e) => setPaypalEmail(e.target.value)}
-                    className="paypal-input"
-                    required
-                  />
-                </div>
-                <div className="paypal-input-group">
-                  <label htmlFor="paypalPassword">Password</label>
-                  <input
-                    type="password"
-                    id="paypalPassword"
-                    value="••••••••••••"
-                    readOnly
-                    className="paypal-input"
-                  />
-                </div>
-                <button type="submit" className="paypal-login-btn">
-                  Log In
-                </button>
-                <div style={{ textAlign: 'center', fontSize: '0.8rem', color: '#666666' }}>
-                  This is a secure simulation for development testing.
-                </div>
-              </form>
-            )}
-
-            {portalStep === 'confirm' && (
-              <div className="paypal-portal-body">
-                <h3 style={{ fontSize: '1.25rem', color: '#333333', fontWeight: 600 }}>
-                  Review Your Payment
-                </h3>
-                
-                <div className="confirm-details">
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#555555' }}>Pay to:</span>
-                    <strong style={{ color: '#333333' }}>Alilly Worldwide</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ color: '#555555' }}>Total amount:</span>
-                    <strong style={{ color: '#333333', fontSize: '1.1rem' }}>£{cartTotal.toFixed(2)} GBP</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #DDD', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
-                    <span style={{ color: '#555555' }}>Funding Source:</span>
-                    <span style={{ color: '#333333' }}>PayPal Balance (Sandbox)</span>
-                  </div>
-                </div>
-
-                <div className="paypal-confirm-section">
-                  <button className="paypal-pay-btn" onClick={handlePaypalPay}>
-                    Pay Now
-                  </button>
-                  <button 
-                    style={{ color: '#0070BA', textAlign: 'center', fontSize: '0.9rem', fontWeight: 500 }}
-                    onClick={() => setPortalStep('login')}
-                  >
-                    Cancel and return
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {portalStep === 'processing' && (
-              <div className="paypal-portal-body" style={{ alignItems: 'center', justifyContent: 'center', padding: '4rem 2rem' }}>
-                <div style={{ width: '40px', height: '40px', border: '4px solid #F3F3F3', borderTop: '4px solid #0070BA', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '1.5rem' }}></div>
-                <h3 style={{ fontSize: '1.1rem', color: '#333333', fontWeight: 600 }}>Processing payment...</h3>
-                <p style={{ fontSize: '0.85rem', color: '#666666', marginTop: '0.5rem' }}>Please do not close this window</p>
-                <style>{`
-                  @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                  }
-                `}</style>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

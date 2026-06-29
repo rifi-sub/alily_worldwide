@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import api from '../lib/api';
 import './ProductDetail.css';
-import productImg from '../assets/product.jpg';
 
 export const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const { addToCart } = useCart();
   
   const [bindingStyle, setBindingStyle] = useState<'Case Bound' | 'Layflat'>('Case Bound');
@@ -14,12 +15,31 @@ export const ProductDetail: React.FC = () => {
   const [readMore, setReadMore] = useState(false);
   const [showToast, setShowToast] = useState(false);
 
-  const product = {
-    id: 'the-art-of-control',
-    name: 'The Art Of Control',
-    price: 85.00,
-    image: productImg
-  };
+  const [product, setProduct] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    api.get(`/worldwide/products/${id}`)
+      .then((res) => {
+        setProduct({
+          id: res.data.id,
+          name: res.data.title,
+          price: res.data.price,
+          image: res.data.image_url,
+          description: res.data.description,
+          category: res.data.category
+        });
+      })
+      .catch((err) => {
+        console.error(err);
+        setError('Product not found');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [id]);
 
   const handleIncrement = () => {
     setQuantity((q) => q + 1);
@@ -32,6 +52,7 @@ export const ProductDetail: React.FC = () => {
   };
 
   const handleAddToCart = () => {
+    if (!product) return;
     addToCart(product, quantity, bindingStyle);
     setShowToast(true);
     setTimeout(() => {
@@ -40,9 +61,33 @@ export const ProductDetail: React.FC = () => {
   };
 
   const handleBuyNow = () => {
+    if (!product) return;
     addToCart(product, quantity, bindingStyle);
     navigate('/checkout-page');
   };
+
+  if (loading) {
+    return (
+      <div className="detail-page">
+        <div className="container" style={{ textAlign: 'center', padding: '5rem 0' }}>
+          <h3>Loading product details...</h3>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="detail-page">
+        <div className="container" style={{ textAlign: 'center', padding: '5rem 0' }}>
+          <h3 style={{ color: 'var(--primary-accent)' }}>{error || 'Product not found'}</h3>
+          <Link to="/category/all-products" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>
+            Back to Shop
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="detail-page">

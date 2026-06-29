@@ -1,21 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../lib/api';
 import './Shop.css';
-import productImg from '../assets/product.jpg';
 
 export const Shop: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<'all' | 'books' | 'graphics'>('all');
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const products = [
-    {
-      id: 'the-art-of-control',
-      name: 'The Art Of Control',
-      price: 85.00,
-      image: productImg,
-      category: 'books',
-      description: 'An e-book by Goddess A Lilly. Learn how to navigate the findom space, establish bulletproof boundaries, and build a highly profitable business model.'
-    }
-  ];
+  useEffect(() => {
+    api.get('/worldwide/products')
+      .then((res) => {
+        setProducts(res.data.map((p: any) => ({
+          id: p.id,
+          name: p.title,
+          price: p.price,
+          image: p.image_url,
+          category: p.category,
+          description: p.description
+        })));
+      })
+      .catch((err) => {
+        console.error(err);
+        setError('Failed to load products');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
   const filteredProducts = products.filter((p) => {
     if (activeCategory === 'all') return true;
@@ -66,7 +79,15 @@ export const Shop: React.FC = () => {
               </select>
             </div>
 
-            {filteredProducts.length > 0 ? (
+            {loading ? (
+              <div className="no-products">
+                <p>Loading products catalog...</p>
+              </div>
+            ) : error ? (
+              <div className="no-products">
+                <p style={{ color: 'var(--primary-accent)' }}>{error}</p>
+              </div>
+            ) : filteredProducts.length > 0 ? (
               <div className="products-grid">
                 {filteredProducts.map((product) => (
                   <Link 
