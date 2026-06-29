@@ -47,6 +47,7 @@ function AppInner() {
             <Route path="/cart-page" element={<CartPage />} />
             <Route path="/checkout-page" element={<CheckoutPage />} />
             <Route path="/members" element={<MembersArea />} />
+            <Route path="/admin" element={<AdminLogin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Routes>
