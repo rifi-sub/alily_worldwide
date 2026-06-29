@@ -22,6 +22,8 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { MembersArea } from './pages/MembersArea';
 import { MeetingRoom } from './pages/MeetingRoom';
 
+import { CartDrawer } from './components/CartDrawer';
+
 function AppInner() {
   const { isAuthenticated, logout } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -56,6 +58,8 @@ function AppInner() {
         </main>
         
         <Footer />
+
+        <CartDrawer />
 
         <LoginModal 
           isOpen={isLoginOpen}

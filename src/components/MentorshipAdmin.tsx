@@ -46,6 +46,7 @@ export const MentorshipAdmin: React.FC = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [hoveredBooking, setHoveredBooking] = useState<MentorshipBooking | null>(null);
+  const [bookingFilter, setBookingFilter] = useState<'all' | 'confirmed' | 'pending' | 'cancelled'>('all');
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -63,8 +64,13 @@ export const MentorshipAdmin: React.FC = () => {
     return days;
   };
 
+  const getFilteredBookings = () => {
+    if (bookingFilter === 'all') return bookings;
+    return bookings.filter(b => b.status === bookingFilter);
+  };
+
   const getBookingsForDate = (date: Date) => {
-    return bookings.filter(b => {
+    return getFilteredBookings().filter(b => {
       const bDate = new Date(b.startTime);
       return bDate.getFullYear() === date.getFullYear() &&
              bDate.getMonth() === date.getMonth() &&
@@ -243,14 +249,25 @@ export const MentorshipAdmin: React.FC = () => {
         {/* Right Column: Bookings Calendar & Daily Details */}
         <div className="mentorship-col">
           <div className="mentorship-card">
-            <div className="card-header">
-              <h3>Reservations Calendar</h3>
-              <div className="calendar-nav">
-                <button type="button" className="btn-nav" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>&lt;</button>
-                <span className="calendar-month-year">
-                  {currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
-                </span>
-                <button type="button" className="btn-nav" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>&gt;</button>
+            <div className="card-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3>Reservations Calendar</h3>
+                <div className="calendar-nav">
+                  <button type="button" className="btn-nav" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>&lt;</button>
+                  <span className="calendar-month-year">
+                    {currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button type="button" className="btn-nav" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>&gt;</button>
+                </div>
+              </div>
+              <div className="booking-filter-bar">
+                <span className="filter-label">Filter:</span>
+                <div className="filter-buttons">
+                  <button type="button" className={`filter-btn ${bookingFilter === 'all' ? 'active' : ''}`} onClick={() => setBookingFilter('all')}>All ({bookings.length})</button>
+                  <button type="button" className={`filter-btn ${bookingFilter === 'confirmed' ? 'active' : ''}`} onClick={() => setBookingFilter('confirmed')}>Confirmed ({bookings.filter(b => b.status === 'confirmed').length})</button>
+                  <button type="button" className={`filter-btn ${bookingFilter === 'pending' ? 'active' : ''}`} onClick={() => setBookingFilter('pending')}>Pending ({bookings.filter(b => b.status === 'pending').length})</button>
+                  <button type="button" className={`filter-btn ${bookingFilter === 'cancelled' ? 'active' : ''}`} onClick={() => setBookingFilter('cancelled')}>Cancelled ({bookings.filter(b => b.status === 'cancelled').length})</button>
+                </div>
               </div>
             </div>
 

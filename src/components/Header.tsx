@@ -13,7 +13,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onLoginClick, isAuthenticated, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { cartCount } = useCart();
+  const { cartCount, openDrawer } = useCart();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -141,10 +141,10 @@ export const Header: React.FC<HeaderProps> = ({ onLoginClick, isAuthenticated, o
             </button>
           )}
 
-          <Link to="/cart-page" className="icon-btn" aria-label="Cart">
+          <button onClick={openDrawer} className="icon-btn" aria-label="Cart">
             <ShoppingBag size={20} />
             {cartCount > 0 && <span className="badge">{cartCount}</span>}
-          </Link>
+          </button>
 
           <button className="menu-toggle" onClick={toggleMobileMenu} aria-label="Toggle Menu">
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}

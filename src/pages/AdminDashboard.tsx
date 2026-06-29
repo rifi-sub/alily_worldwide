@@ -54,6 +54,7 @@ export const AdminDashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [orderFilter, setOrderFilter] = useState<'all' | 'pending' | 'confirmed' | 'delivered' | 'cancelled'>('all');
 
   // Expanded Order IDs
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
@@ -260,13 +261,25 @@ export const AdminDashboard: React.FC = () => {
         ) : (
           <div className="tab-content">
             {/* Orders Tab */}
-            {activeTab === 'orders' && (
-              <div className="orders-section">
-                {orders.length === 0 ? (
-                  <div className="empty-dashboard-state">No orders recorded yet.</div>
-                ) : (
-                  <div className="orders-list">
-                    {orders.map((order) => {
+            {activeTab === 'orders' && (() => {
+              const filteredOrders = orders.filter(o => orderFilter === 'all' || o.status === orderFilter);
+              return (
+                <div className="orders-section">
+                  <div className="dashboard-filter-bar">
+                    <span className="filter-label">Filter Status:</span>
+                    <div className="filter-buttons">
+                      <button className={`filter-btn ${orderFilter === 'all' ? 'active' : ''}`} onClick={() => setOrderFilter('all')}>All ({orders.length})</button>
+                      <button className={`filter-btn ${orderFilter === 'pending' ? 'active' : ''}`} onClick={() => setOrderFilter('pending')}>Pending ({orders.filter(o => o.status === 'pending').length})</button>
+                      <button className={`filter-btn ${orderFilter === 'confirmed' ? 'active' : ''}`} onClick={() => setOrderFilter('confirmed')}>Confirmed ({orders.filter(o => o.status === 'confirmed').length})</button>
+                      <button className={`filter-btn ${orderFilter === 'delivered' ? 'active' : ''}`} onClick={() => setOrderFilter('delivered')}>Delivered ({orders.filter(o => o.status === 'delivered').length})</button>
+                      <button className={`filter-btn ${orderFilter === 'cancelled' ? 'active' : ''}`} onClick={() => setOrderFilter('cancelled')}>Cancelled ({orders.filter(o => o.status === 'cancelled').length})</button>
+                    </div>
+                  </div>
+                  {filteredOrders.length === 0 ? (
+                    <div className="empty-dashboard-state">No orders found for this status.</div>
+                  ) : (
+                    <div className="orders-list">
+                      {filteredOrders.map((order) => {
                       const isExpanded = !!expandedOrders[order.id];
                       return (
                         <div key={order.id} className={`order-row-card ${isExpanded ? 'expanded' : ''}`}>
@@ -349,7 +362,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 )}
               </div>
-            )}
+            )})()}
 
             {/* Products Tab */}
             {activeTab === 'products' && (

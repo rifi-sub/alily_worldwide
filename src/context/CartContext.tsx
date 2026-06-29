@@ -17,6 +17,10 @@ interface CartContextType {
   clearCart: () => void;
   cartCount: number;
   cartTotal: number;
+  // Drawer state
+  isDrawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -26,10 +30,14 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const localData = localStorage.getItem('alilly_worldwide_cart');
     return localData ? JSON.parse(localData) : [];
   });
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('alilly_worldwide_cart', JSON.stringify(cart));
   }, [cart]);
+
+  const openDrawer = () => setIsDrawerOpen(true);
+  const closeDrawer = () => setIsDrawerOpen(false);
 
   const addToCart = (product: Omit<CartItem, 'quantity'>, quantity: number, bindingStyle?: string) => {
     setCart((prevCart) => {
@@ -45,6 +53,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return [...prevCart, { ...product, quantity, bindingStyle }];
     });
+    // Automatically open drawer when adding to cart
+    openDrawer();
   };
 
   const removeFromCart = (id: string, bindingStyle?: string) => {
@@ -82,6 +92,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearCart,
         cartCount,
         cartTotal,
+        isDrawerOpen,
+        openDrawer,
+        closeDrawer,
       }}
     >
       {children}
