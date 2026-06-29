@@ -51,7 +51,7 @@ export const BookOnline: React.FC = () => {
                 <div className="service-main">
                   <h3 className="service-name">{service.title}</h3>
                   <div className="service-meta">
-                    <span className="service-price">£{service.price.toFixed(2)}</span>
+                    <span className="service-price">£{Number(service.price).toFixed(2)}</span>
                     <span>|</span>
                     <span>{service.durationMinutes} min</span>
                   </div>

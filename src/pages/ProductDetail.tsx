@@ -26,7 +26,7 @@ export const ProductDetail: React.FC = () => {
         setProduct({
           id: res.data.id,
           name: res.data.title,
-          price: res.data.price,
+          price: Number(res.data.price),
           image: res.data.image_url,
           description: res.data.description,
           category: res.data.category

@@ -15,7 +15,7 @@ export const Shop: React.FC = () => {
         setProducts(res.data.map((p: any) => ({
           id: p.id,
           name: p.title,
-          price: p.price,
+          price: Number(p.price),
           image: p.image_url,
           category: p.category,
           description: p.description
