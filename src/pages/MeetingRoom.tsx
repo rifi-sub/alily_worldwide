@@ -84,9 +84,9 @@ export const MeetingRoom: React.FC = () => {
 
   // Construct secure room name
   const roomName = `alily-mentorship-${booking.id}`;
-  
-  // Custom Jitsi configuration through hash parameters (using meet.ffmuc.net to avoid host authentication requirements)
-  const jitsiUrl = `https://meet.ffmuc.net/${roomName}#userInfo.displayName="${encodeURIComponent(displayName)}"&config.prejoinPageEnabled=false&config.disableInviteFunctions=true&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
+
+  // Using MiroTalk P2P (completely open WebRTC, no host login required, optimized for iframes)
+  const meetingUrl = `https://p2p.mirotalk.com/join/${roomName}?name=${encodeURIComponent(displayName)}`;
 
   return (
     <div className="meeting-room-page">
@@ -107,11 +107,11 @@ export const MeetingRoom: React.FC = () => {
           </div>
         </div>
       </header>
-      
+
       <div className="meeting-iframe-container">
         <iframe
-          src={jitsiUrl}
-          allow="camera; microphone; fullscreen; display-capture; autoplay"
+          src={meetingUrl}
+          allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-read; clipboard-write; web-share"
           title="ALILY Secure Video Meeting"
           className="meeting-iframe"
         />
