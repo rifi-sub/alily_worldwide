@@ -20,6 +20,7 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { MembersArea } from './pages/MembersArea';
+import { MeetingRoom } from './pages/MeetingRoom';
 
 function AppInner() {
   const { isAuthenticated, logout } = useAuth();
@@ -47,6 +48,7 @@ function AppInner() {
             <Route path="/cart-page" element={<CartPage />} />
             <Route path="/checkout-page" element={<CheckoutPage />} />
             <Route path="/members" element={<MembersArea />} />
+            <Route path="/meeting/:bookingId" element={<MeetingRoom />} />
             <Route path="/admin" element={<AdminLogin />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />

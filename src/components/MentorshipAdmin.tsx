@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import adminApi from '../lib/adminApi';
+import { Link } from 'react-router-dom';
 import { Plus, Trash2, Edit, X } from 'lucide-react';
 import './MentorshipAdmin.css';
 
@@ -40,6 +41,40 @@ export const MentorshipAdmin: React.FC = () => {
   const [availabilities, setAvailabilities] = useState<MentorshipAvailability[]>([]);
   const [bookings, setBookings] = useState<MentorshipBooking[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Calendar state
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [hoveredBooking, setHoveredBooking] = useState<MentorshipBooking | null>(null);
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    for (let d = 1; d <= totalDays; d++) {
+      days.push(new Date(year, month, d));
+    }
+    return days;
+  };
+
+  const getBookingsForDate = (date: Date) => {
+    return bookings.filter(b => {
+      const bDate = new Date(b.startTime);
+      return bDate.getFullYear() === date.getFullYear() &&
+             bDate.getMonth() === date.getMonth() &&
+             bDate.getDate() === date.getDate();
+    });
+  };
+
+  const getAvailabilityForDayOfWeek = (dayOfWeek: number) => {
+    return availabilities.filter(a => a.dayOfWeek === dayOfWeek && a.isActive);
+  };
 
   // Modals
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
@@ -205,29 +240,119 @@ export const MentorshipAdmin: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Bookings */}
+        {/* Right Column: Bookings Calendar & Daily Details */}
         <div className="mentorship-col">
           <div className="mentorship-card">
             <div className="card-header">
-              <h3>Recent Bookings</h3>
-            </div>
-            {bookings.length === 0 ? <p className="empty-text">No bookings yet.</p> : (
-              <div className="bookings-list">
-                {bookings.map(b => (
-                  <div key={b.id} className="booking-item">
-                    <div className="booking-header">
-                      <strong>{b.service?.title}</strong>
-                      <span className="status-pill confirmed">Confirmed</span>
-                    </div>
-                    <p><strong>Date:</strong> {new Date(b.startTime).toLocaleString()}</p>
-                    <p><strong>Customer:</strong> {b.customerName || b.customerEmail} ({b.customerEmail})</p>
-                    <p><strong>Amount Paid:</strong> £{b.amount}</p>
-                    <p><strong>Link:</strong> <a href={b.meetingLink || '#'} target="_blank" rel="noreferrer" style={{color: 'var(--primary-accent)'}}>{b.meetingLink}</a></p>
-                  </div>
-                ))}
+              <h3>Reservations Calendar</h3>
+              <div className="calendar-nav">
+                <button type="button" className="btn-nav" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}>&lt;</button>
+                <span className="calendar-month-year">
+                  {currentMonth.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                </span>
+                <button type="button" className="btn-nav" onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}>&gt;</button>
               </div>
-            )}
+            </div>
+
+            <div className="calendar-grid">
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                <div key={d} className="calendar-weekday-header">{d}</div>
+              ))}
+              {getDaysInMonth(currentMonth).map((day, idx) => {
+                if (!day) return <div key={`empty-${idx}`} className="calendar-day empty"></div>;
+                
+                const dayBookings = getBookingsForDate(day);
+                const dayOfWeek = day.getDay();
+                const isAvailable = getAvailabilityForDayOfWeek(dayOfWeek).length > 0;
+                const isSelected = selectedDate && 
+                  selectedDate.getFullYear() === day.getFullYear() &&
+                  selectedDate.getMonth() === day.getMonth() &&
+                  selectedDate.getDate() === day.getDate();
+                const isToday = new Date().toDateString() === day.toDateString();
+
+                return (
+                  <button
+                    key={day.toISOString()}
+                    type="button"
+                    className={`calendar-day ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''} ${isAvailable ? 'available' : ''}`}
+                    onClick={() => setSelectedDate(day)}
+                  >
+                    <span className="day-number">{day.getDate()}</span>
+                    {dayBookings.length > 0 && (
+                      <span className="booking-badge">{dayBookings.length}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {selectedDate && (
+            <div className="mentorship-card day-details-card">
+              <div className="card-header">
+                <h3>{selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</h3>
+              </div>
+
+              <div className="details-section">
+                <h4>Availability Schedule</h4>
+                {getAvailabilityForDayOfWeek(selectedDate.getDay()).length === 0 ? (
+                  <p className="empty-text">No hours configured for {DAYS_OF_WEEK[selectedDate.getDay()]}.</p>
+                ) : (
+                  <div className="avail-slots-list">
+                    {getAvailabilityForDayOfWeek(selectedDate.getDay()).map(a => (
+                      <span key={a.id} className="avail-slot-badge">
+                        {a.startTime} - {a.endTime}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="details-section" style={{ marginTop: '1.5rem' }}>
+                <h4>Bookings ({getBookingsForDate(selectedDate).length})</h4>
+                {getBookingsForDate(selectedDate).length === 0 ? (
+                  <p className="empty-text">No bookings scheduled for this day.</p>
+                ) : (
+                  <div className="selected-day-bookings">
+                    {getBookingsForDate(selectedDate).map(b => (
+                      <div
+                        key={b.id}
+                        className="booking-detail-item"
+                        onMouseEnter={() => setHoveredBooking(b)}
+                        onMouseLeave={() => setHoveredBooking(null)}
+                      >
+                        <div className="booking-item-header">
+                          <span className="booking-time">
+                            {new Date(b.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="status-pill confirmed">{b.status}</span>
+                        </div>
+                        <div className="booking-item-main">
+                          <strong>{b.service?.title}</strong>
+                          <p>Client: {b.customerName || 'Anonymous'} ({b.customerEmail})</p>
+                          <p>Paid: £{Number(b.amount).toFixed(2)}</p>
+                        </div>
+                        {b.meetingLink && (
+                          <Link to={b.meetingLink} className="btn btn-sm btn-outline join-btn" style={{ marginTop: '0.5rem', display: 'inline-block', textAlign: 'center' }}>
+                            Join Call
+                          </Link>
+                        )}
+
+                        {/* Hover Tooltip Details */}
+                        {hoveredBooking?.id === b.id && (
+                          <div className="booking-hover-tooltip">
+                            <p><strong>Booking ID:</strong> {b.id}</p>
+                            <p><strong>PayPal Order:</strong> {b.paypalOrderId || 'N/A'}</p>
+                            <p><strong>End Time:</strong> {new Date(b.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
