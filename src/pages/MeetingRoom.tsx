@@ -85,8 +85,8 @@ export const MeetingRoom: React.FC = () => {
   // Construct secure room name
   const roomName = `alily-mentorship-${booking.id}`;
   
-  // Custom Jitsi configuration through hash parameters
-  const jitsiUrl = `https://meet.jit.si/${roomName}#userInfo.displayName="${encodeURIComponent(displayName)}"&config.prejoinPageEnabled=false&config.disableInviteFunctions=true&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
+  // Custom Jitsi configuration through hash parameters (using meet.ffmuc.net to avoid host authentication requirements)
+  const jitsiUrl = `https://meet.ffmuc.net/${roomName}#userInfo.displayName="${encodeURIComponent(displayName)}"&config.prejoinPageEnabled=false&config.disableInviteFunctions=true&interfaceConfig.SHOW_JITSI_WATERMARK=false`;
 
   return (
     <div className="meeting-room-page">
